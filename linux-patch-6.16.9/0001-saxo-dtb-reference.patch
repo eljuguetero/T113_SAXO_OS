@@ -1,0 +1,35 @@
+diff --git a/arch/arm/boot/dts/allwinner/Makefile b/arch/arm/boot/dts/allwinner/Makefile
+index d799ad153b37..fbef59029604 100644
+--- a/arch/arm/boot/dts/allwinner/Makefile
++++ b/arch/arm/boot/dts/allwinner/Makefile
+@@ -257,6 +257,7 @@ dtb-$(CONFIG_MACH_SUN8I) += \
+ 	sun8i-s3-lichee-zero-plus.dtb \
+ 	sun8i-s3-pinecube.dtb \
+ 	sun8i-t113s-mangopi-mq-r-t113.dtb \
++	sun8i-t113s-saxo-gateway.dtb \
+ 	sun8i-t3-cqa3t-bv3.dtb \
+ 	sun8i-v3-sl631-imx179.dtb \
+ 	sun8i-v3s-anbernic-rg-nano.dtb \
+diff --git a/arch/riscv/boot/dts/allwinner/sunxi-d1s-t113.dtsi b/arch/riscv/boot/dts/allwinner/sunxi-d1s-t113.dtsi
+index e4175adb028d..ca4a8f411b49 100644
+--- a/arch/riscv/boot/dts/allwinner/sunxi-d1s-t113.dtsi
++++ b/arch/riscv/boot/dts/allwinner/sunxi-d1s-t113.dtsi
+@@ -143,6 +143,18 @@ uart3_pb_pins: uart3-pb-pins {
+ 				pins = "PB6", "PB7";
+ 				function = "uart3";
+ 			};
++
++			/omit-if-no-ref/
++			uart4_pg_pins: uart4-pg-pins {
++				pins = "PG2", "PG3";
++				function = "uart4";
++			};
++
++			/omit-if-no-ref/
++			uart5_pg_pins: uart5-pg-pins {
++				pins = "PG4", "PG5";
++				function = "uart5";
++			};		
+ 		};
+ 
+ 		ccu: clock-controller@2001000 {

@@ -1,0 +1,204 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Common peripherals and configurations for MangoPi MQ-R boards.
+ */
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/leds/common.h>
+
+/ {
+	aliases {
+		ethernet0 = &emac;
+		serial0 = &uart0;
+		serial1 = &uart1;
+		serial3 = &uart3;
+		serial4 = &uart4;
+		serial5 = &uart5;
+	};
+
+	chosen {
+		stdout-path = "serial3:115200n8";
+	};
+
+	gpio_init {
+		compatible = "gpio-leds";
+
+		pcie_enable {
+		    label = "PCIE_PWREN";
+		    gpios = <&pio 6 0 GPIO_ACTIVE_HIGH>; /* PG0 */
+		    default-state = "on";
+		};
+
+		usb_enable {
+		    label = "USB_PWREN";
+		    gpios = <&pio 3 20 GPIO_ACTIVE_HIGH>; /* PD20 */
+		    default-state = "on";
+		};
+
+		working-led {
+		    label = "WORKING_LED";
+		    gpios = <&pio 6 1 GPIO_ACTIVE_HIGH>; /* PG1 */
+		    default-state = "on";
+		};
+	};
+	    
+	/* board wide 5V supply directly from the USB-C socket */
+	reg_vcc5v: regulator-5v {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc-5v";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		regulator-always-on;
+	};
+
+	/* SY8008 DC/DC regulator on the board */
+	reg_3v3: regulator-3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc-3v3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		vin-supply = <&reg_vcc5v>;
+	};
+
+	/* SY8008 DC/DC regulator on the board, also supplying VDD-SYS */
+	reg_vcc_core: regulator-core {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc-core";
+		regulator-min-microvolt = <880000>;
+		regulator-max-microvolt = <880000>;
+		vin-supply = <&reg_vcc5v>;
+	};
+
+	/* XC6206 LDO on the board */
+	reg_avdd2v8: regulator-avdd {
+		compatible = "regulator-fixed";
+		regulator-name = "avdd2v8";
+		regulator-min-microvolt = <2800000>;
+		regulator-max-microvolt = <2800000>;
+		vin-supply = <&reg_3v3>;
+	};
+	
+	reg_usb1_vbus: usb1-vbus {
+		compatible = "regulator-fixed";
+		regulator-name = "usb1-vbus";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		regulator-enable-ramp-delay = <1000>;
+		enable-active-high;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+		
+	wifi_pwrseq: wifi-pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		reset-gpios = <&pio 6 12 GPIO_ACTIVE_LOW>; /* PG12 */
+	};
+};
+
+&dcxo {
+	clock-frequency = <24000000>;
+};
+
+
+&mmc0 {
+	pinctrl-0 = <&mmc0_pins>;
+	pinctrl-names = "default";
+	vmmc-supply = <&reg_3v3>;
+	cd-gpios = <&pio 5 6 GPIO_ACTIVE_LOW>;
+	disable-wp;
+	bus-width = <4>;
+	status = "okay";
+};
+
+
+&mmc2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mmc2_pins>;
+	vmmc-supply = <&reg_3v3>;
+	bus-width = <8>;
+	non-removable;
+	cap-mmc-hw-reset;
+	status = "okay";
+};
+
+&pio {
+	vcc-pb-supply = <&reg_3v3>;
+	vcc-pd-supply = <&reg_3v3>;
+	vcc-pe-supply = <&reg_avdd2v8>;
+	vcc-pf-supply = <&reg_3v3>;
+	vcc-pg-supply = <&reg_3v3>;
+};
+
+&uart1 {        
+        pinctrl-names = "default";
+        pinctrl-0 = <&uart1_pg6_pins>;
+        status = "okay";
+};
+
+&uart3 {        
+        pinctrl-names = "default";
+        pinctrl-0 = <&uart3_pb_pins>;
+        status = "okay";
+};
+
+&uart4 {        
+        pinctrl-names = "default";
+        pinctrl-0 = <&uart4_pg_pins>;
+        status = "okay";
+};
+
+&uart5 {        
+        pinctrl-names = "default";
+        pinctrl-0 = <&uart5_pg_pins>;
+        status = "okay";
+};
+
+&emac {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&rmii_pe_pins>;
+	phy-mode = "rmii";
+
+	clocks = <&ccu CLK_BUS_EMAC>;
+	clock-names = "stmmaceth";
+	resets = <&ccu RST_BUS_EMAC>;
+	reset-names = "stmmaceth";
+
+	phy-handle = <&rmii_phy>;
+
+	mdio {
+		compatible = "snps,dwmac-mdio";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		rmii_phy: ethernet-phy@1 {
+			reg = <1>;
+			compatible = "ethernet-phy-ieee802.3-c22";
+		};
+	};
+};
+
+&ehci0 {
+	status = "okay";
+};
+
+&ehci1 {
+	status = "okay";
+};
+
+&ohci0 {
+	status = "okay";
+};
+
+&ohci1 {
+	status = "okay";
+};
+
+&usbphy {
+	vbus-supply = <&reg_usb1_vbus>;
+	status = "okay";
+};
+
+&wdt {
+	status = "okay";
+};
