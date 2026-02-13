@@ -10,7 +10,10 @@ sudo apt install -y build-essential fakeroot bc bison flex libssl-dev libncurses
 sudo apt install -y mkbootimg
 
 # Install U-Boot tools and Python development files
-sudo apt install u-boot-tools python3-dev
+sudo apt install -y u-boot-tools python3-dev
+
+# Debian debootstrap related tools
+sudo apt install -y debootstrap fakeroot qemu-user-static binfmt-support
 ```
 
 # Clone the T113_SAXO_OS repository with all submodules 
