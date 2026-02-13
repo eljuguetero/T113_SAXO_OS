@@ -18,3 +18,18 @@ Shallow clone, depth 1
 ```
 git clone --recurse-submodules --shallow-submodules --depth 1 git@github.com:eljuguetero/T113_SAXO_OS.git
 ```
+# Kernel compilation
+```
+./build_kernel.sh
+```
+
+# U-Boot compilation
+```
+./build_u-boot.sh
+```
+
+# Custom Debian bootstrap
+```
+cd debian 
+./build_debian.sh
+```
