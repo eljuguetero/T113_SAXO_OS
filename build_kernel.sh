@@ -12,7 +12,7 @@ cd linux
 
 git checkout -f
 
-patch -d . -p1 < ../linux-patch-6.16.9/0001-t113s-saxo-dtb-reference.patch
+patch -d . -p1 < ../linux-patch-6.16.9/0001-saxo-dtb-reference.patch
 
 make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- menuconfig
 make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- zImage dtbs modules -j4

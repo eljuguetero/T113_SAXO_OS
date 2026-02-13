@@ -5,7 +5,7 @@
 /dts-v1/;
 
 #include "sun8i-t113s.dtsi"
-#include "sunxi-d1s-t113-saxo.dtsi"
+#include "sunxi-d1s-t113s-saxo.dtsi"
 
 / {
 	model = "T113 SAXO";
