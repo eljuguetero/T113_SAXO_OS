@@ -15,7 +15,7 @@
 	};
 
 	chosen {
-		stdout-path = "serial3:115200n8";
+		stdout-path = "serial0:115200n8";
 	};
 
 	leds {
@@ -99,9 +99,16 @@
 	vcc-pg-supply = <&reg_3v3>;
 };
 
+&uart0 {        
+        pinctrl-names = "default";
+        pinctrl-0 = <&uart0_pe2_pins>;
+        status = "okay";
+};
+
+
 &uart3 {        
         pinctrl-names = "default";
         pinctrl-0 = <&uart3_pb_pins>;
-        status = "okay";
+        status = "disabled";
 };
 
