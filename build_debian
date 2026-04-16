@@ -1,0 +1,22 @@
+mkdir debian_fs
+cd debian_fs
+# (re-)generate only if rootfs doesn't exist or runme script has changed
+# bootstrap a first-stage rootfs
+sudo rm -rf debian_bookworm
+
+# Ejecutar la primera etapa de bootstrap
+fakeroot debootstrap --variant=minbase \
+	--arch=armhf --components=main,contrib,non-free \
+	--foreign \
+	--include=apt-transport-https,busybox,ca-certificates,can-utils,\
+command-not-found,chrony,curl,e2fsprogs,ethtool,fdisk,gpiod,haveged,\
+i2c-tools,ifupdown,iputils-ping,isc-dhcp-client,initramfs-tools,\
+libiio-utils,lm-sensors,locales,nano,net-tools,wpasupplicant,ntpdate,\
+openssh-server,psmisc,rfkill,sudo,systemd-sysv,tftp,tftp-hpa,tio,usbutils,\
+wget,xterm,xz-utils,vim,fim,build-essential,libftdi1-dev,libftdi1,chuck,chuck-data,\
+alsa-utils,libasound2-dev,libsndfile1-dev,bison,flex,jackd2,libasound2,libsndfile1,\
+libpulse-dev,pulseaudio,libjack-jackd2-dev,faust,apache2,\
+libmicrohttpd12,libmicrohttpd-dev,bluez,iw,wireless-regdb,bsdextrautils \
+bookworm \
+debian_bookworm \
+https://deb.debian.org/debian
