@@ -17,7 +17,7 @@
 	};
 
 	chosen {
-		stdout-path = "serial3:115200n8";
+		stdout-path = "serial0:115200n8";
 	};
 
 	gpio_init {
@@ -127,30 +127,41 @@
 	vcc-pe-supply = <&reg_avdd2v8>;
 	vcc-pf-supply = <&reg_3v3>;
 	vcc-pg-supply = <&reg_3v3>;
+	
+	uart0_pe2_pins: uart0-pe2-pins {
+		pins = "PE2", "PE3";
+		function = "uart0";
+	};
+};
+
+&uart0 {        
+        pinctrl-names = "default";
+        pinctrl-0 = <&uart0_pe2_pins>;
+        status = "okay";
 };
 
 &uart1 {        
         pinctrl-names = "default";
         pinctrl-0 = <&uart1_pg6_pins>;
-        status = "okay";
+        status = "disabled";
 };
 
 &uart3 {        
         pinctrl-names = "default";
         pinctrl-0 = <&uart3_pb_pins>;
-        status = "okay";
+        status = "disabled";
 };
 
 &uart4 {        
         pinctrl-names = "default";
         pinctrl-0 = <&uart4_pg_pins>;
-        status = "okay";
+        status = "disabled";
 };
 
 &uart5 {        
         pinctrl-names = "default";
         pinctrl-0 = <&uart5_pg_pins>;
-        status = "okay";
+        status = "disabled";
 };
 
 &emac {

@@ -11,7 +11,7 @@ cp u-boot-patch-v2025.07/sunxi-d1s-t113.dtsi          u-boot/arch/riscv/dts
 
 cd u-boot
 
-git checkout -f
+#git checkout -f
 
 patch -d . -p1 <  ../u-boot-patch-v2025.07/0001-saxo-dtb.patch
 
