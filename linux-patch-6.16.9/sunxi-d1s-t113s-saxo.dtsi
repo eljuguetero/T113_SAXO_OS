@@ -5,6 +5,8 @@
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/leds/common.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
 
 / {
 	aliases {
@@ -40,7 +42,60 @@
 		    gpios = <&pio 6 1 GPIO_ACTIVE_HIGH>; /* PG1 */
 		    default-state = "on";
 		};
+
+	matrix_keypad0{
+		compatible = "gpio-matrix-keypad";
+		col-scan-delay-us = <500>;
+		debounce-delay-ms = <100>;
+		status = "okay";
+		wakeup-source;
+		linux,no-autorepeat;
+		drive_inactive_cols;
+		row-gpios = <
+			&pio 3 16 GPIO_ACTIVE_LOW
+			&pio 3 14 GPIO_ACTIVE_LOW
+			&pio 3 13 GPIO_ACTIVE_LOW
+			&pio 3 10 GPIO_ACTIVE_LOW
+			&pio 3 21 GPIO_ACTIVE_LOW
+			&pio 3 6  GPIO_ACTIVE_LOW
+			&pio 3 4  GPIO_ACTIVE_LOW
+			&pio 3 2  GPIO_ACTIVE_LOW
+		>;
+		col-gpios = <
+			&pio 3 8 GPIO_ACTIVE_HIGH 
+			&pio 3 0 GPIO_ACTIVE_HIGH
+			&pio 3 20 GPIO_ACTIVE_HIGH
+		>;
+		bias-pull-down;
+		linux,keymap = <
+			MATRIX_KEY(0,0,KEY_Z)
+			MATRIX_KEY(1, 0, KEY_X) /* COL0 ROW1 */
+			MATRIX_KEY(2, 0, KEY_C) /* COL0 ROW2 */
+			MATRIX_KEY(3, 0, KEY_V) /* COL0 ROW3 */
+			MATRIX_KEY(4, 0, KEY_B) /* COL0 ROW4 */
+			MATRIX_KEY(5, 0, KEY_N) /* COL0 ROW5 */
+			MATRIX_KEY(6, 0, KEY_M) /* COL0 ROW6 */
+			MATRIX_KEY(7, 0, KEY_Q) /* COL0 ROW7 */
+			MATRIX_KEY(0, 1, KEY_W) /* COL1, ROW0 */
+			MATRIX_KEY(1, 1, KEY_E) /* COL1, ROW1 */
+			MATRIX_KEY(2, 1, KEY_R) /* COL1, ROW2 */
+			MATRIX_KEY(3, 1, KEY_T) /* COL1, ROW3 */
+			MATRIX_KEY(4, 1, KEY_Y) /* COL1, ROW4 */
+			MATRIX_KEY(5, 1, KEY_U) /* COL1, ROW5 */
+			MATRIX_KEY(6, 1, KEY_I) /* COL1, ROW6 */
+			MATRIX_KEY(7, 1, KEY_O) /* COL1, ROW7 */
+			MATRIX_KEY(0, 2, KEY_A) /* COL2, ROW0 */
+			MATRIX_KEY(1, 2, KEY_S) /* COL2, ROW1 */
+			MATRIX_KEY(2, 2, KEY_D) /* COL2, ROW2 */
+			MATRIX_KEY(3, 2, KEY_F) /* COL2, ROW3 */
+			MATRIX_KEY(4, 2, KEY_G) /* COL2, ROW4 */
+			MATRIX_KEY(5, 2, KEY_H) /* COL2, ROW5 */
+			MATRIX_KEY(6, 2, KEY_J) /* COL2, ROW6 */
+			MATRIX_KEY(7, 2, KEY_K) /* COL2, ROW7 */
+		>;
 	};
+	};
+
 	    
 	/* board wide 5V supply directly from the USB-C socket */
 	reg_vcc5v: regulator-5v {

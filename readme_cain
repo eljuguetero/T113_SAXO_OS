@@ -1,2 +1,5 @@
+setenv kernel zImage
+setenv dts sun8i-t113s-saxo-gateway.dtb
 setenv boot_mmc 'fatload mmc 0:1 ${kernel_addr_r} ${kernel} ; fatload mmc 0:1 ${fdt_addr_r} ${dts}; bootz ${kernel_addr_r} - ${fdt_addr_r}'
 setenv bootargs 'earlyprintk=sunxi-uart,0x02500000 clk_ignore_unused initcall_debug=0 loglevel=100 root=/dev/mmcblk0p2 init=/sbin/init rootwait console=tty0 console=ttyS0,115200 cma=8M mem=128M'
+saveenv

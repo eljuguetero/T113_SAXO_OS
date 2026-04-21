@@ -3,9 +3,9 @@
 # build_debian_mac.sh — Crea rootfs Debian Bookworm para T113-S3 SAXO desde macOS
 # Requiere: Docker o OrbStack corriendo
 #
-# NOTA: debootstrap necesita crear device nodes (mknod) lo cual no es posible
-# en volúmenes montados desde macOS. La solución es hacer todo dentro del
-# filesystem del contenedor y exportar el resultado como tarball.
+# NOTA: debootstrap y tar necesitan crear device nodes (mknod) lo cual no es
+# posible en volúmenes montados desde macOS. Todo corre dentro del contenedor
+# y el resultado se exporta como tarball + se extrae también dentro de Docker.
 # =============================================================================
 
 set -e
@@ -14,7 +14,6 @@ SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 IMAGE_NAME="t113-build"
 DOCKERFILE="$SCRIPT_DIR/Dockerfile.build"
 DEBIAN_FS="$SCRIPT_DIR/debian_fs"
-ROOTFS="$DEBIAN_FS/debian_bookworm"
 TARBALL="$DEBIAN_FS/debian_bookworm.tar.gz"
 
 # -----------------------------------------------------------------------------
@@ -72,6 +71,19 @@ fi
 mkdir -p "$DEBIAN_FS"
 
 # -----------------------------------------------------------------------------
+# Si el tarball ya existe, saltar el debootstrap
+# -----------------------------------------------------------------------------
+if [ -f "$TARBALL" ]; then
+    warning "Tarball ya existe: $TARBALL ($(du -sh "$TARBALL" | cut -f1))"
+    read -p "¿Regenerar el rootfs? (s/N): " REGEN
+    if [[ "$REGEN" != "s" && "$REGEN" != "S" ]]; then
+        info "Usando tarball existente."
+        # Saltar al paso de extracción
+        SKIP_BUILD=1
+    fi
+fi
+
+# -----------------------------------------------------------------------------
 # Lista de paquetes
 # -----------------------------------------------------------------------------
 PACKAGES="apt-transport-https,busybox,ca-certificates,can-utils,net-tools,build-essential,\
@@ -85,63 +97,50 @@ libpulse-dev,pulseaudio,libjack-jackd2-dev,faust,apache2,\
 libmicrohttpd12,libmicrohttpd-dev,iw,wireless-regdb,bsdextrautils"
 
 # -----------------------------------------------------------------------------
-# Todo el proceso dentro del filesystem del contenedor (evita restricción mknod)
-# Luego se exporta como tarball al volumen macOS
+# Build: debootstrap + configuración + exportar tarball
 # -----------------------------------------------------------------------------
-info "Iniciando construcción del rootfs Debian Bookworm (armhf)..."
-info "Esto puede tardar 15-30 minutos dependiendo de la conexión..."
+if [ -z "$SKIP_BUILD" ]; then
+    info "Iniciando construcción del rootfs Debian Bookworm (armhf)..."
+    info "Esto puede tardar 15-30 minutos dependiendo de la conexión..."
 
-docker run --rm \
-    --privileged \
-    -v "$DEBIAN_FS:/output" \
-    "$IMAGE_NAME" bash -c "
-        set -e
+    docker run --rm \
+        --privileged \
+        -v "$DEBIAN_FS:/output" \
+        "$IMAGE_NAME" bash -c "
+            set -e
+            ROOTFS=/build/debian_bookworm
+            mkdir -p \$ROOTFS
 
-        ROOTFS=/build/debian_bookworm
-        mkdir -p \$ROOTFS
+            echo ''
+            echo '[1/4] debootstrap primera etapa...'
+            debootstrap \
+                --variant=minbase \
+                --arch=armhf \
+                --components=main,contrib,non-free \
+                --foreign \
+                --include=${PACKAGES} \
+                bookworm \
+                \$ROOTFS \
+                https://deb.debian.org/debian
 
-        # ----------------------------------------------------------------
-        # Etapa 1: debootstrap primera etapa (en filesystem del contenedor)
-        # ----------------------------------------------------------------
-        echo ''
-        echo '[1/4] debootstrap primera etapa...'
-        debootstrap \
-            --variant=minbase \
-            --arch=armhf \
-            --components=main,contrib,non-free \
-            --foreign \
-            --include=${PACKAGES} \
-            bookworm \
-            \$ROOTFS \
-            https://deb.debian.org/debian
+            echo ''
+            echo '[2/4] debootstrap segunda etapa (QEMU ARM)...'
+            cp /usr/bin/qemu-arm-static \$ROOTFS/usr/bin/
+            update-binfmts --enable qemu-arm 2>/dev/null || true
+            chroot \$ROOTFS /debootstrap/debootstrap --second-stage
 
-        # ----------------------------------------------------------------
-        # Etapa 2: debootstrap segunda etapa con QEMU
-        # ----------------------------------------------------------------
-        echo ''
-        echo '[2/4] debootstrap segunda etapa (QEMU ARM)...'
-        cp /usr/bin/qemu-arm-static \$ROOTFS/usr/bin/
-        update-binfmts --enable qemu-arm 2>/dev/null || true
-        chroot \$ROOTFS /debootstrap/debootstrap --second-stage
+            echo ''
+            echo '[3/4] Configurando el sistema...'
 
-        # ----------------------------------------------------------------
-        # Etapa 3: configuración del sistema
-        # ----------------------------------------------------------------
-        echo ''
-        echo '[3/4] Configurando el sistema...'
+            echo 'saxo' > \$ROOTFS/etc/hostname
 
-        # Hostname
-        echo 'saxo' > \$ROOTFS/etc/hostname
-
-        # /etc/hosts
-        cat > \$ROOTFS/etc/hosts << 'HOSTS'
+            cat > \$ROOTFS/etc/hosts << 'HOSTS'
 127.0.0.1   localhost
 127.0.1.1   saxo
 ::1         localhost ip6-localhost ip6-loopback
 HOSTS
 
-        # Red (eth0 DHCP)
-        cat > \$ROOTFS/etc/network/interfaces << 'NET'
+            cat > \$ROOTFS/etc/network/interfaces << 'NET'
 auto lo
 iface lo inet loopback
 
@@ -149,55 +148,56 @@ auto eth0
 iface eth0 inet dhcp
 NET
 
-        # fstab
-        cat > \$ROOTFS/etc/fstab << 'FSTAB'
+            cat > \$ROOTFS/etc/fstab << 'FSTAB'
 /dev/mmcblk0p2  /       ext4    defaults,noatime    0 1
 /dev/mmcblk0p1  /boot   vfat    defaults            0 2
 FSTAB
 
-        # locale
-        chroot \$ROOTFS bash -c \"
-            echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen
-            locale-gen
-            update-locale LANG=en_US.UTF-8
-        \" || true
+            chroot \$ROOTFS bash -c \"
+                echo 'en_US.UTF-8 UTF-8' >> /etc/locale.gen
+                locale-gen
+                update-locale LANG=en_US.UTF-8
+            \" || true
 
-        # SSH root login
-        sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' \
-            \$ROOTFS/etc/ssh/sshd_config 2>/dev/null || true
+            sed -i 's/#PermitRootLogin.*/PermitRootLogin yes/' \
+                \$ROOTFS/etc/ssh/sshd_config 2>/dev/null || true
 
-        # Password root = 'saxo'
-        chroot \$ROOTFS bash -c \"echo 'root:saxo' | chpasswd\" || true
+            chroot \$ROOTFS bash -c \"echo 'root:saxo' | chpasswd\" || true
 
-        # Limpiar qemu-arm-static
-        rm -f \$ROOTFS/usr/bin/qemu-arm-static
+            rm -f \$ROOTFS/usr/bin/qemu-arm-static
 
-        # ----------------------------------------------------------------
-        # Etapa 4: exportar tarball al volumen macOS
-        # ----------------------------------------------------------------
-        echo ''
-        echo '[4/4] Exportando rootfs a /output/debian_bookworm.tar.gz...'
-        tar -czf /output/debian_bookworm.tar.gz -C /build debian_bookworm
+            echo ''
+            echo '[4/4] Exportando rootfs a /output/debian_bookworm.tar.gz...'
+            tar -czf /output/debian_bookworm.tar.gz -C /build debian_bookworm
 
-        echo ''
-        echo '===================================='
-        echo ' Rootfs Debian Bookworm completado'
-        echo '===================================='
-        du -sh \$ROOTFS
-    "
-
-# -----------------------------------------------------------------------------
-# Extraer tarball en macOS
-# -----------------------------------------------------------------------------
-if [ -f "$TARBALL" ]; then
-    info "Extrayendo rootfs en $ROOTFS..."
-    rm -rf "$ROOTFS"
-    tar -xzf "$TARBALL" -C "$DEBIAN_FS"
-    info "✅ Rootfs disponible en: $ROOTFS ($(du -sh "$ROOTFS" | cut -f1))"
-    info "Tarball guardado en: $TARBALL"
-else
-    error "No se generó el tarball en $TARBALL"
+            echo ''
+            echo '===================================='
+            echo ' Rootfs Debian Bookworm completado'
+            echo '===================================='
+            du -sh \$ROOTFS
+        "
 fi
 
+# -----------------------------------------------------------------------------
+# Extraer tarball dentro de Docker (macOS no puede restaurar permisos Linux)
+# -----------------------------------------------------------------------------
+[ -f "$TARBALL" ] || error "Tarball no encontrado: $TARBALL"
+
+info "Extrayendo rootfs dentro de Docker..."
+docker run --rm \
+    --privileged \
+    -v "$DEBIAN_FS:/output" \
+    "$IMAGE_NAME" bash -c "
+        set -e
+        cd /output
+        rm -rf debian_bookworm
+        tar -xzf debian_bookworm.tar.gz
+        echo 'Extracción completada'
+        du -sh debian_bookworm
+        ls debian_bookworm
+    "
+
+info "✅ Rootfs disponible en: $DEBIAN_FS/debian_bookworm"
+info "   Tarball de respaldo:  $TARBALL ($(du -sh "$TARBALL" | cut -f1))"
 echo ""
 info "Para flashear en la microSD ejecuta: sudo ./burn_microsd.sh"
