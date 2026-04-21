@@ -15,5 +15,5 @@ cd u-boot
 
 patch -d . -p1 <  ../u-boot-patch-v2025.07/0001-saxo-dtb.patch
 
-make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j4 t113s_saxo_defconfig
-make ARCH=arm CROSS_COMPILE=arm-linux-gnueabi- -j4
+make ARCH=arm CROSS_COMPILE=arm-none-eabi- -j4 t113s_saxo_defconfig
+make ARCH=arm CROSS_COMPILE=arm-none-eabi- -j4
